@@ -13,7 +13,7 @@ class TaskController extends Controller
     public function index()
     {
         $tasks = auth()->user()->tasks;
-        return response()->json($tasks);
+        return response()->json($tasks, 200);
     }
 
     public function store(Request $request)
@@ -33,17 +33,16 @@ class TaskController extends Controller
             $task->due_date = $fields['due_date'];
             $task->user()->associate(auth()->user());
             $task->save();
-            
-            
+
+
             return response()->json([
                 'message: ' => 'project submitted successfully',
                 'task: ' => $task
-            ]);
+            ], 201);
         } catch (Exception $e) {
-            return [
-                'message' => 'erreur' . $e->getMessage()
-
-            ];
+            return response()->json([
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -57,14 +56,15 @@ class TaskController extends Controller
         }
 
         if ($task->user_id != auth()->user()->id) {
-            return [
+            return response()->json([
                 'message' => 'not Authaurized'
-            ];
+            ], 403);
         }
+
         if ($task->status === 'completed') {
-            return [
+            return response()->json([
                 'message' => 'this task is completed, cannot be modified'
-            ];
+            ], 403);
         }
 
         try {
@@ -78,11 +78,11 @@ class TaskController extends Controller
             return response()->json([
                 'message' => 'updated succefully',
                 'task' => $task
-            ]);
+            ], 200);
         } catch (Exception $e) {
-            return [
-                "message" => 'erreur' . $e->getMessage()
-            ];
+            return response()->json([
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -94,7 +94,7 @@ class TaskController extends Controller
         if ($task->user_id != auth()->id()) {
             return response()->json([
                 'message' => 'you cant delete tasks that are not yours'
-            ]);
+            ], 403);
         }
 
         try {
@@ -104,9 +104,9 @@ class TaskController extends Controller
                 'message' => 'Task deleted successfully'
             ], 200);
         } catch (Exception $e) {
-            return [
-                "message" => 'erreur' . $e->getMessage()
-            ];
+            return response()->json([
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
         }
     }
 }
