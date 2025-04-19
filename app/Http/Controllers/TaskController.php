@@ -12,24 +12,32 @@ class TaskController extends Controller
 {
     public function index()
     {
-        $tasks = Task::with('user')->get();
+        $tasks = auth()->user()->tasks;
         return response()->json($tasks);
     }
 
     public function store(Request $request)
     {
+        
         try {
             $fields = $request->validate([
                 'title' => 'required|string|max:500|unique:tasks,title',
                 'description' => 'nullable|string',
                 'status' => 'required|in:pending,in_progress,completed',
-                'due_date' => 'required|date|after:now',
+                'due_date' => 'required|date',
             ]);
-            $validated['user_id'] = auth()->id();
-            $task = Task::create($validated);
+            $task = new Task();
+            $task->title = $fields['title'];
+            $task->description = $fields['description'];
+            $task->status = $fields['status'];
+            $task->due_date = $fields['due_date'];
+            $task->user()->associate(auth()->user());
+            $task->save();
+            
+            
             return response()->json([
-                'message' => 'project submitted successfully',
-                'task' => $task
+                'message: ' => 'project submitted successfully',
+                'task: ' => $task
             ]);
         } catch (Exception $e) {
             return [
@@ -59,17 +67,23 @@ class TaskController extends Controller
             ];
         }
 
-        $fields = $request->validate([
-            'title' => 'required|string|max:500|unique:tasks,title',
-            'description' => 'nullable|string',
-            'status' => 'required|in:pending,in_progress,completed',
-            'due_date' => 'required|date|after:now',
-        ]);
-        $task->update($fields);
-        return response()->json([
-            'message' => 'updated succefully',
-            'task' => $task
-        ]);
+        try {
+            $fields = $request->validate([
+                'title' => 'required|string|max:500',
+                'description' => 'nullable|string',
+                'status' => 'required|in:pending,in_progress,completed',
+                'due_date' => 'required|date',
+            ]);
+            $task->update($fields);
+            return response()->json([
+                'message' => 'updated succefully',
+                'task' => $task
+            ]);
+        } catch (Exception $e) {
+            return [
+                "message" => 'erreur' . $e->getMessage()
+            ];
+        }
     }
 
     public function destroy($id)
@@ -83,10 +97,16 @@ class TaskController extends Controller
             ]);
         }
 
-        $task->delete();
+        try {
+            $task->delete();
 
-        return response()->json([
-            'message' => 'Task deleted successfully'
-        ], 200);
+            return response()->json([
+                'message' => 'Task deleted successfully'
+            ], 200);
+        } catch (Exception $e) {
+            return [
+                "message" => 'erreur' . $e->getMessage()
+            ];
+        }
     }
 }
